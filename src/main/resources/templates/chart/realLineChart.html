@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Realtime Data Line Graph</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+    <meta charset='utf-8'/>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <style>
+    body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    #chart {
+      max-width: 600px;
+      max-height: 400px;
+    }
+
+    </style>
+</head>
+<body>
+<div id="chart"></div>
+<div>
+    <button onclick="connect_click();">connect</button>
+    <button onclick="disconnect_click();">disconnect</button>
+</div>
+
+<script src="/js/script.js"></script>
+<script src="/webjars/sockjs-client/1.1.2/sockjs.min.js"></script>
+<script src="/webjars/stomp-websocket/2.3.3-1/stomp.min.js"></script>
+<script>
+    var lineArr = [];
+    var MAX_LENGTH = 100;
+    var duration = 1000;
+    var chart = realTimeLineChart();
+    var sock;
+    var ws;
+    var reconnect = 0;
+    var subscription = '';
+
+    function updateData(recv) {
+      var lineData = {
+        time: new Date(recv.date),
+        data: Number(recv.message),
+        type: recv.type
+      };
+
+      lineArr.push(lineData);
+
+      if (lineArr.length > 30) {
+        lineArr.shift();
+      }
+      d3.select("#chart").datum(lineArr).call(chart);
+    }
+
+    function resize() {
+      if (d3.select("#chart svg").empty()) {
+        return;
+      }
+      chart.width(+d3.select("#chart").style("width").replace(/(px)/g, ""));
+      d3.select("#chart").call(chart);
+    }
+
+    function seedData(label) {
+      var now = new Date();
+      for (var i = 0; i < MAX_LENGTH; ++i) {
+        lineArr.push({
+          time: new Date(now.getTime() - ((MAX_LENGTH - i) * duration)),
+          data: 0,
+          type: label
+        });
+      }
+    }
+
+    function connect() {
+            // pub/sub event
+            ws.connect({}, function(frame) {
+                subscription = ws.subscribe("/sub/chart/line", function(message) {
+                    var recv = JSON.parse(message.body);
+                    updateData(recv);
+                    reconnect = 0;
+                });
+            }, function(error) {
+                if(reconnect++ <= 5) {
+                    setTimeout(function() {
+                        console.log("connection reconnect");
+                        sock = new SockJS("/ws-stomp");
+                        ws = Stomp.over(sock);
+                        connect();
+                    },10*1000);
+                }
+            });
+        }
+
+
+    function connect_click(){
+      if(typeof sock != 'object'){
+        sock = new SockJS("/ws-stomp");
+        ws = Stomp.over(sock);
+        connect();
+        setTimeout(() => {}, 500);
+        var url = "http://localhost:8080/consumer/start"
+        fetch(url, {
+                method : "POST",
+                headers: {
+                "Content-Type": "application/json",
+                }
+            }).then((response) => console.log("response:", response))
+      } else {
+        alert('already connected')
+      }
+    }
+
+    function disconnect_click() {
+      if(subscription != ''){
+<!--          var url = "http://localhost:8080/consumer/stop"-->
+<!--          fetch(url, {-->
+<!--                  method : "POST",-->
+<!--                  headers: {-->
+<!--                  "Content-Type": "application/json",-->
+<!--                  }-->
+<!--              }).then((response) => console.log("response:", response))-->
+
+          ws.unsubscribe(subscription.id);
+          subscription = '';
+          sock = '';
+          ws.disconnect();
+
+        } else {
+          alert('not connected')
+        }
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+      d3.select("#chart").datum(lineArr).call(chart);
+      d3.select(window).on('resize', resize);
+    });
+
+    seedData("CPU");
+
+
+
+</script>
+</body>
+</html>

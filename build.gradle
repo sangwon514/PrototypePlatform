@@ -1,0 +1,45 @@
+plugins {
+	id 'org.springframework.boot' version '2.7.5'
+	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+	id 'java'
+}
+
+group = 'com.prototype'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	implementation 'co.elastic.clients:elasticsearch-java:8.4.3'
+	implementation 'jakarta.json:jakarta.json-api:2.0.1'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.3'
+
+	//embedded-redis
+	implementation 'it.ozimov:embedded-redis:0.7.2'
+	implementation 'org.webjars.bower:bootstrap:4.3.1'
+	implementation 'org.webjars.bower:vue:2.5.16'
+	implementation 'org.webjars.bower:axios:0.17.1'
+	implementation 'org.webjars:sockjs-client:1.1.2'
+	implementation 'org.webjars:stomp-websocket:2.3.3-1'
+
+	implementation 'org.springframework.kafka:spring-kafka:2.8.10'
+	implementation 'org.apache.kafka:kafka-streams:3.2.3'
+	implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
